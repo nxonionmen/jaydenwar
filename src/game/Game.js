@@ -183,6 +183,14 @@ class Game {
                     this.message = "강화할 무기를 들고 있지 않습니다.";
                 }
             }
+        } else {
+            // Not in SHOP
+            if (e.key === 'u' || e.key === 'U') {
+                this.message = "강화는 상점(S)에서만 가능합니다!";
+            }
+            if (e.key === 'p' || e.key === 'P' || e.key === 'g' || e.key === 'G') {
+                this.message = "구매는 상점(S)에서만 가능합니다!";
+            }
         }
     }
 
