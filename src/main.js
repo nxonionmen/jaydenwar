@@ -12,18 +12,15 @@ window.onload = () => {
     // Mobile Controls
     document.querySelectorAll('.control-btn').forEach(btn => {
         const handleInput = (e) => {
-            e.preventDefault(); // Prevent double firing or scrolling
+            e.preventDefault(); // Prevent default behavior (scroll, zoom, double-tap zoom)
             const key = btn.getAttribute('data-key');
             if (key) {
-                // Determine if key is upper or lower case based on game logic needs?
-                // Game.js generally checks both (e.key === 'u' || e.key === 'U')
-                // So passing the key directly is fine.
                 game.input({ key: key });
             }
         };
 
-        btn.addEventListener('touchstart', handleInput, { passive: false });
-        btn.addEventListener('mousedown', handleInput);
+        // Use pointerdown for unified touch/mouse handling without duplicates
+        btn.addEventListener('pointerdown', handleInput);
     });
 
     window.game = game; // Expose for debugging
