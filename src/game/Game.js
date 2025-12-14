@@ -1,0 +1,276 @@
+class Game {
+    constructor() {
+        this.app = document.getElementById('app');
+        this.app.innerHTML = '<canvas id="gameCanvas"></canvas>';
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+
+        this.player = new Player();
+        this.shop = new Shop();
+        this.state = 'HOME';
+        this.message = '환영합니다! (H)집, (B)전투, (S)상점. (1-4) 무기 교체';
+
+        this.lastAttackTime = 0;
+
+        // Give player all weapons for testing as per request implied by "Use these weapons"
+        // Or should they buy them? The Readme lists them as general items.
+        // Let's give them all 3 basic weapons to demonstrate the mechanics.
+        this.player.inventory.weapons.push(ITEMS.SWORD);
+        this.player.inventory.weapons.push(ITEMS.GUN);
+        this.player.inventory.weapons.push(ITEMS.SHURIKEN);
+        this.player.equipWeapon(ITEMS.SWORD);
+
+        window.addEventListener('keydown', (e) => this.input(e));
+
+        // Assets
+        this.bgImage = new Image();
+        this.bgImage.src = 'src/background.png';
+    }
+
+    resize() {
+        this.canvas.width = 800;
+        this.canvas.height = 600;
+    }
+
+    input(e) {
+        // Weapon Switching (1, 2, 3)
+        if (e.key === '1') {
+            this.player.equipWeapon(this.player.inventory.weapons[0]);
+            this.message = `장착: ${this.player.inventory.weapons[0].name}`;
+        }
+        if (e.key === '2') {
+            this.player.equipWeapon(this.player.inventory.weapons[1]);
+            this.message = `장착: ${this.player.inventory.weapons[1].name}`;
+        }
+        if (e.key === '3') {
+            this.player.equipWeapon(this.player.inventory.weapons[2]);
+            this.message = `장착: ${this.player.inventory.weapons[2].name}`;
+        }
+        if (e.key === '4') {
+            if (this.player.inventory.weapons[3]) {
+                this.player.equipWeapon(this.player.inventory.weapons[3]);
+                this.message = `장착: ${this.player.inventory.weapons[3].name}`;
+            } else {
+                this.message = "아직 이 무기가 없습니다!";
+            }
+        }
+
+        if (e.key === 'h' || e.key === 'H') this.state = 'HOME';
+        if (e.key === 'b' || e.key === 'B') this.enterBattle();
+        if (e.key === 's' || e.key === 'S') this.state = 'SHOP';
+
+        if (this.state === 'BATTLE') {
+            if (e.key === ' ') {
+                this.attack();
+            }
+        }
+
+        if (this.state === 'HOME') {
+            if (e.key === 'r' || e.key === 'R') {
+                this.rest();
+            }
+        }
+
+        if (this.state === 'SHOP') {
+            if (e.key === 'p' || e.key === 'P') {
+                if (this.shop.buyPotion(this.player)) {
+                    this.message = "포션 구매 완료!";
+                } else {
+                    this.message = "골드가 부족합니다!";
+                }
+            }
+            if (e.key === 'g' || e.key === 'G') {
+                const result = this.shop.buyWeapon(this.player, ITEMS.GREAT_SWORD);
+                if (result === 'BOUGHT') this.message = "대검 구매 완료!";
+                if (result === 'ALREADY_OWNED') this.message = "이미 가지고 있습니다!";
+                if (result === 'NO_GOLD') this.message = "골드가 부족합니다! (50골드 필요)";
+            }
+        }
+    }
+
+    start() {
+        this.gameLoop();
+    }
+
+    gameLoop() {
+        this.update();
+        this.draw();
+        requestAnimationFrame(() => this.gameLoop());
+    }
+
+    update() {
+        // Check cooldowns visual?
+    }
+
+    enterBattle() {
+        this.state = 'BATTLE';
+        this.message = '적이 나타났습니다! 스페이스바로 공격하세요.';
+        this.enemy = {
+            hp: 10,
+            maxHp: 10,
+            name: '오크'
+        };
+    }
+
+    attack() {
+        if (!this.enemy) return;
+
+        const now = Date.now();
+        const weapon = this.player.activeWeapon || ITEMS.SWORD;
+
+        // Relad Time Check
+        if (weapon.reloadTime > 0) {
+            const timeSince = (now - this.lastAttackTime) / 1000;
+            if (timeSince < weapon.reloadTime) {
+                this.message = `재장전 중... (${(weapon.reloadTime - timeSince).toFixed(1)}초)`;
+                return;
+            }
+        }
+
+        // Special Conditions
+        if (weapon.special === 'LOW_HP_ONLY') {
+            if (this.player.hp > 2) { // "hp 2 이하인 사람만 사용 가능"
+                this.message = "체력이 너무 많아 사용할 수 없습니다! (HP 2 이하 필요)";
+                return;
+            }
+        }
+
+        this.lastAttackTime = now;
+
+        const hit = Combat.calculateHit(weapon, null);
+
+        if (hit) {
+            const dmg = Combat.calculateDamage(weapon, null);
+            this.enemy.hp -= dmg;
+            this.message = `${weapon.name} 공격 적중! ${dmg} 데미지!`;
+
+            if (this.enemy.hp <= 0) {
+                this.winBattle();
+            } else {
+                this.enemyAttack();
+            }
+        } else {
+            this.message = `${weapon.name} 빗나감! (${(weapon.hitRate * 100)}%)`;
+            this.enemyAttack();
+        }
+    }
+
+    enemyAttack() {
+        if (!this.enemy || this.enemy.hp <= 0) return;
+
+        const enemyDmg = 1;
+        const taken = this.player.takeDamage(enemyDmg);
+        // this.message += ` Enemy hit you for ${taken}!`;
+        // Append message carefully?
+
+        if (this.player.hp <= 0) {
+            this.state = 'GAMEOVER';
+            this.message = '사망했습니다. 새로고침하여 다시 시작하세요.';
+        }
+    }
+
+    winBattle() {
+        this.state = 'HOME';
+        this.player.gold += 20;
+        // Bonus for streak? logic not here yet
+        this.message = '승리! 20 골드 획득.';
+        this.enemy = null;
+    }
+
+    rest() {
+        if (this.player.heal()) {
+            this.message = '휴식하여 체력을 회복했습니다!';
+        } else {
+            this.message = '쉴 수 없습니다 (체력이 2 이하일 때만 가능).';
+        }
+    }
+
+    draw() {
+        if (this.bgImage.complete) {
+            this.ctx.drawImage(this.bgImage, 0, 0, this.canvas.width, this.canvas.height);
+        } else {
+            this.ctx.fillStyle = '#333';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+
+        // Header
+        this.ctx.fillStyle = '#FFF';
+        this.ctx.font = '24px Inter';
+        this.ctx.textAlign = 'left';
+        // Translate Mode?
+        let modeText = this.state;
+        if (this.state === 'HOME') modeText = '집';
+        if (this.state === 'BATTLE') modeText = '전투';
+        if (this.state === 'SHOP') modeText = '상점';
+        if (this.state === 'GAMEOVER') modeText = '게임 오버';
+
+        this.ctx.fillText(`${modeText} 모드`, 20, 40);
+
+        // Message Bar
+        this.ctx.fillStyle = '#555';
+        this.ctx.fillRect(0, this.canvas.height - 60, this.canvas.width, 60);
+        this.ctx.fillStyle = '#FFD700'; // Gold color for text
+        this.ctx.font = '20px Inter';
+        this.ctx.fillText(this.message, 20, this.canvas.height - 25);
+
+        // HUD
+        this.ctx.fillStyle = '#EEE';
+        this.ctx.fillText(`플레이어 HP:`, 20, 100);
+
+        // HP Bar
+        this.ctx.fillStyle = 'red';
+        this.ctx.fillRect(150, 80, 200 * (this.player.hp / this.player.maxHp), 25);
+        this.ctx.strokeRect(150, 80, 200, 25);
+        this.ctx.fillStyle = 'white';
+        this.ctx.fillText(`${this.player.hp} / ${this.player.maxHp}`, 160, 100);
+
+        this.ctx.fillStyle = 'gold';
+        this.ctx.fillText(`골드: ${this.player.gold}`, 20, 140);
+
+        // Weapon info
+        const active = this.player.activeWeapon || { name: '없음' };
+        this.ctx.fillStyle = 'cyan';
+        this.ctx.fillText(`무기: ${active.name}`, 20, 180);
+        this.ctx.font = '16px Inter';
+        this.ctx.fillText(`공격력:${active.damage} | 명중:${(active.hitRate * 100)}% | 쿨타임:${active.reloadTime}초`, 20, 205);
+
+        // Help text
+        this.ctx.fillStyle = '#aaa';
+        this.ctx.fillText("키: (1)검 (2)총 (3)표창 (4)대검 | (H)집 (B)전투 (S)상점", 20, 500);
+
+        // Scene visuals
+        if (this.state === 'HOME') {
+            this.ctx.fillStyle = '#4a4';
+            this.ctx.fillRect(400, 200, 100, 100);
+            this.ctx.fillStyle = 'white';
+            this.ctx.fillText("집 (HOME)", 415, 260);
+            if (this.player.hp <= 2) {
+                this.ctx.fillStyle = '#afa';
+                this.ctx.fillText("잠기 (R)", 420, 280);
+            }
+        } else if (this.state === 'SHOP') {
+            this.ctx.fillStyle = '#aa4';
+            this.ctx.fillRect(400, 200, 100, 100);
+            this.ctx.fillStyle = 'white';
+            this.ctx.fillText("상점 (SHOP)", 410, 260);
+            this.ctx.fillText("포션 10g (P)", 400, 280);
+            this.ctx.fillText("대검 50g (G)", 400, 300);
+            this.ctx.font = '12px Inter';
+            this.ctx.fillText("공3 명90%", 420, 315);
+            this.ctx.font = '20px Inter';
+        } else if (this.state === 'BATTLE') {
+            if (this.enemy) {
+                this.ctx.fillStyle = 'red';
+                this.ctx.fillRect(500, 200, 80, 80);
+                this.ctx.fillStyle = '#fff';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(this.enemy.name, 540, 250);
+                this.ctx.fillText(`${this.enemy.hp} HP`, 540, 270);
+            }
+        }
+    }
+}
+window.Game = Game;

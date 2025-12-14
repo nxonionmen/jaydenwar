@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jayden War</title>
+    <link rel="stylesheet" href="src/style.css">
+</head>
+
+<body>
+    <div id="app"></div>
+    <div id="error-console"
+        style="color: red; padding: 20px; font-family: monospace; background: #000; position: absolute; top: 0; left: 0; z-index: 9999;">
+    </div>
+
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            const div = document.getElementById('error-console');
+            div.innerHTML += `<div>Error: ${msg}<br>At: ${url}:${line}:${col}</div>`;
+            return false;
+        };
+    </script>
+
+    <!-- Load scripts in order of dependency -->
+    <script src="src/game/Items.js?v=1"></script>
+    <script src="src/game/Player.js?v=1"></script>
+    <script src="src/game/Combat.js?v=1"></script>
+    <script src="src/game/Shop.js?v=1"></script>
+    <script src="src/game/Game.js?v=1"></script>
+    <script src="src/main.js?v=1"></script>
+</body>
+
+</html>
