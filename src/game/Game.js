@@ -28,6 +28,24 @@ class Game {
         // Assets
         this.bgImage = new Image();
         this.bgImage.src = 'src/background.png';
+
+        this.sound = new SoundManager();
+        this.soundStarted = false;
+
+        this.setupMobileControls();
+    }
+
+    setupMobileControls() {
+        const btns = document.querySelectorAll('.control-btn');
+        btns.forEach(btn => {
+            const handlePress = (e) => {
+                e.preventDefault(); // Prevent accidental selection/zoom
+                const key = btn.dataset.key;
+                this.input({ key: key });
+            };
+            btn.addEventListener('touchstart', handlePress, { passive: false });
+            btn.addEventListener('mousedown', handlePress); // For testing on PC
+        });
     }
 
     resize() {
@@ -36,6 +54,13 @@ class Game {
     }
 
     input(e) {
+        // Resume Audio Context on first interaction
+        if (!this.soundStarted) {
+            this.sound.resume();
+            this.sound.playBGM();
+            this.soundStarted = true;
+        }
+
         // Weapon Switching (1, 2, 3)
         if (e.key === '1') {
             this.player.equipWeapon(this.player.inventory.weapons[0]);
@@ -74,17 +99,28 @@ class Game {
             }
         }
 
+        // Battle Selection
+        if (this.state === 'BATTLE_SELECT') {
+            if (e.key === '1') this.startBattle('ORC');
+            if (e.key === '2') this.startBattle('KNIGHT');
+            if (e.key === '3') this.startBattle('DRAGON');
+        }
+
         if (this.state === 'SHOP') {
             if (e.key === 'p' || e.key === 'P') {
                 if (this.shop.buyPotion(this.player)) {
                     this.message = "포션 구매 완료!";
+                    this.sound.playBuy();
                 } else {
                     this.message = "골드가 부족합니다!";
                 }
             }
             if (e.key === 'g' || e.key === 'G') {
                 const result = this.shop.buyWeapon(this.player, ITEMS.GREAT_SWORD);
-                if (result === 'BOUGHT') this.message = "대검 구매 완료!";
+                if (result === 'BOUGHT') {
+                    this.message = "대검 구매 완료!";
+                    this.sound.playBuy();
+                }
                 if (result === 'ALREADY_OWNED') this.message = "이미 가지고 있습니다!";
                 if (result === 'NO_GOLD') this.message = "골드가 부족합니다! (50골드 필요)";
             }
@@ -143,6 +179,7 @@ class Game {
         const hit = Combat.calculateHit(weapon, null);
 
         if (hit) {
+            this.sound.playAttack();
             const dmg = Combat.calculateDamage(weapon, null);
             this.enemy.hp -= dmg;
             this.message = `${weapon.name} 공격 적중! ${dmg} 데미지!`;
@@ -163,6 +200,7 @@ class Game {
 
         const enemyDmg = 1;
         const taken = this.player.takeDamage(enemyDmg);
+        this.sound.playHit();
         // this.message += ` Enemy hit you for ${taken}!`;
         // Append message carefully?
 
