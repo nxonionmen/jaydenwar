@@ -17,49 +17,42 @@
 
     <!-- Mobile Controls -->
     <div id="mobile-controls">
-        <div class="control-row" style="margin-top: 10px;">
-            <div class="control-group">
-                <button class="control-btn btn-menu" data-key="h">집</button>
-                <button class="control-btn btn-menu" data-key="b">전투</button>
-                <button class="control-btn btn-menu" data-key="s">상점</button>
-            </div>
-            <div class="control-group">
-                <div class="control-row">
-                    <button class="control-btn" data-key="1">🗡️</button>
-                    <button class="control-btn" data-key="2">🔫</button>
-                    <button class="control-btn" data-key="3">⭐</button>
-                    <button class="control-btn" data-key="4">⚔️</button>
-                    <button class="control-btn" data-key="5">💊</button>
-                </div>
-                <div class="control-row">
-                    <button class="control-btn" data-key="h">🏠</button>
-                    <button class="control-btn" data-key="b">⚔️</button>
-                    <button class="control-btn" data-key="s">🛒</button>
-                    <button class="control-btn" data-key="r">💤/💀</button>
-                    <button class="control-btn" data-key="u">🔨</button>
-                </div>
-            </div>
-            <button id="reset-btn"
-                style="position: absolute; top: 10px; right: 10px; background: #c33; color: white; border: none; padding: 5px 10px; cursor: pointer; z-index: 1000;">데이터
-                초기화</button>
+        <!-- Reset Button inside controls to keep z-index context, positioned absolute -->
+        <button id="reset-btn">🔄 초기화</button>
 
-            <script>
-                window.onerror = function (msg, url, line, col, error) {
-                    const div = document.getElementById('error-console');
-                    div.innerHTML += `<div>Error: ${msg}<br>At: ${url}:${line}:${col}</div>`;
-                    return false;
-                };
-            </script>
+        <div class="control-row">
+            <button class="control-btn" data-key="1">🗡️</button>
+            <button class="control-btn" data-key="2">🔫</button>
+            <button class="control-btn" data-key="3">⭐</button>
+            <button class="control-btn" data-key="4">⚔️</button>
+            <button class="control-btn" data-key="5">💊</button>
+        </div>
+        <div class="control-row">
+            <button class="control-btn" data-key="h">🏠</button>
+            <button class="control-btn" data-key="b">⚔️</button>
+            <button class="control-btn" data-key="s">🛒</button>
+            <button class="control-btn" data-key="r">💤/💀</button>
+            <button class="control-btn" data-key="u">🔨</button>
+        </div>
+    </div>
 
-            <!-- Load scripts in order of dependency -->
-            <!-- Load scripts in order of dependency -->
-            <script src="src/game/Items.js?v=4"></script>
-            <script src="src/game/Player.js?v=4"></script>
-            <script src="src/game/Combat.js?v=4"></script>
-            <script src="src/game/Shop.js?v=4"></script>
-            <script src="src/game/Sound.js?v=4"></script>
-            <script src="src/game/Game.js?v=4"></script>
-            <script src="src/main.js?v=4"></script>
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            const div = document.getElementById('error-console');
+            div.innerHTML += `<div>Error: ${msg}<br>At: ${url}:${line}:${col}</div>`;
+            return false;
+        };
+    </script>
+
+    <!-- Load scripts in order of dependency -->
+    <!-- Load scripts in order of dependency -->
+    <script src="src/game/Items.js?v=4"></script>
+    <script src="src/game/Player.js?v=4"></script>
+    <script src="src/game/Combat.js?v=4"></script>
+    <script src="src/game/Shop.js?v=4"></script>
+    <script src="src/game/Sound.js?v=4"></script>
+    <script src="src/game/Game.js?v=4"></script>
+    <script src="src/main.js?v=4"></script>
 </body>
 
 </html>

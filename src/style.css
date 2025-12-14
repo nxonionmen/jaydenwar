@@ -54,44 +54,60 @@ canvas {
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 20px;
-  padding-bottom: calc(20px + env(safe-area-inset-bottom));
-  padding-left: calc(20px + env(safe-area-inset-left));
-  padding-right: calc(20px + env(safe-area-inset-right));
+  justify-content: flex-end;
+  /* Align to bottom */
+  padding: 10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  padding-left: calc(10px + env(safe-area-inset-left));
+  padding-right: calc(10px + env(safe-area-inset-right));
   box-sizing: border-box;
+  gap: 10px;
+}
+
+#reset-btn {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  background: rgba(200, 50, 50, 0.8);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 12px;
+  cursor: pointer;
+  z-index: 1001;
+  pointer-events: auto;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
 }
 
 .control-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
+  /* Center buttons */
+  gap: 8px;
   width: 100%;
   pointer-events: auto;
-}
-
-.control-group {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
+  flex-wrap: wrap;
+  /* Allow wrapping on small screens */
 }
 
 .control-btn {
-  width: 70px;
-  height: 70px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-radius: 12px;
+  width: 50px;
+  /* Smaller default size */
+  height: 50px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
   color: white;
   font-family: 'Inter', sans-serif;
-  font-weight: bold;
   font-size: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   user-select: none;
   cursor: pointer;
-  backdrop-filter: blur(2px);
-  margin: 5px;
+  backdrop-filter: blur(4px);
+  /* Remove margin, use gap in container */
 }
 
 .control-btn:active {
@@ -99,17 +115,26 @@ canvas {
   transform: scale(0.95);
 }
 
-.btn-large {
-  width: 100px;
-  height: 100px;
-  font-size: 30px;
-  background: rgba(200, 50, 50, 0.4);
-  border-radius: 50%;
+/* Tablet / Desktop Tweaks */
+@media (min-width: 768px) {
+  .control-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    border-radius: 12px;
+  }
 }
 
-.btn-menu {
-  border-radius: 8px;
-  font-size: 16px;
-  width: 80px;
-  height: 50px;
+/* Landscape Tweaks: Move controls to sides to avoid covering center */
+@media (orientation: landscape) and (max-height: 600px) {
+  .control-row {
+    width: auto;
+    /* Let them sit nicely */
+  }
+
+  #mobile-controls {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
 }
