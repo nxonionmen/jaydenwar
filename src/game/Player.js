@@ -23,9 +23,14 @@ class Player {
         if (this.restCount > 0) {
             this.hp = this.maxHp;
             this.restCount--;
-            return true;
+            return 'REST_COUNT';
         }
-        return false;
+        if (this.gold >= 30) {
+            this.gold -= 30;
+            this.hp = this.maxHp;
+            return 'GOLD';
+        }
+        return 'FAIL';
     }
 
     usePotion() {

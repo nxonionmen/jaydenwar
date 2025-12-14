@@ -304,11 +304,16 @@ class Game {
     }
 
     rest() {
-        if (this.player.heal()) {
+        const result = this.player.heal();
+        if (result === 'REST_COUNT') {
             this.message = `휴식하여 체력을 회복했습니다! (남은 횟수: ${this.player.restCount})`;
             this.save();
+        } else if (result === 'GOLD') {
+            this.message = `골드를 사용하여 휴식했습니다! (-30G)`;
+            this.sound.playBuy(); // Sound effect
+            this.save();
         } else {
-            this.message = '휴식 횟수를 모두 소진했습니다!';
+            this.message = '휴식 횟수가 없고 골드도 부족합니다! (30G 필요)';
         }
     }
 
@@ -382,9 +387,15 @@ class Game {
             this.ctx.fillText("집 (HOME)", 415, 260);
 
             this.ctx.fillStyle = '#afa';
-            this.ctx.fillText(`휴식하기 (R)`, 420, 280);
-            this.ctx.font = '16px Inter';
-            this.ctx.fillText(`남은 횟수: ${this.player.restCount}`, 430, 305);
+            if (this.player.restCount > 0) {
+                this.ctx.fillText(`휴식하기 (R)`, 420, 280);
+                this.ctx.font = '16px Inter';
+                this.ctx.fillText(`남은 횟수: ${this.player.restCount}`, 430, 305);
+            } else {
+                this.ctx.fillText(`유료 휴식 (R)`, 420, 280);
+                this.ctx.font = '16px Inter';
+                this.ctx.fillText(`비용: 30 골드`, 430, 305);
+            }
             this.ctx.font = '20px Inter';
         } else if (this.state === 'SHOP') {
             this.ctx.fillStyle = '#aa4';
