@@ -6,6 +6,8 @@ class Player {
         this.level = 1;
         this.xp = 0;
         this.xpToNextLevel = 50;
+        this.reviveCount = 0; // Track revives
+
         this.inventory = {
             weapons: [],
             armor: null,
@@ -66,6 +68,7 @@ class Player {
             level: this.level,
             xp: this.xp,
             xpToNextLevel: this.xpToNextLevel,
+            reviveCount: this.reviveCount,
             inventory: {
                 // Save only item names to avoid circular refs and allow re-linking
                 weapons: this.inventory.weapons.map(w => w.name),
@@ -83,6 +86,7 @@ class Player {
         this.level = data.level || 1;
         this.xp = data.xp || 0;
         this.xpToNextLevel = data.xpToNextLevel || 50;
+        this.reviveCount = data.reviveCount || 0;
 
         this.inventory.potions = data.inventory.potions || 0;
         this.inventory.weapons = [];
