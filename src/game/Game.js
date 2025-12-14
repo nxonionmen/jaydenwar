@@ -305,10 +305,10 @@ class Game {
 
     rest() {
         if (this.player.heal()) {
-            this.message = '휴식하여 체력을 회복했습니다!';
+            this.message = `휴식하여 체력을 회복했습니다! (남은 횟수: ${this.player.restCount})`;
             this.save();
         } else {
-            this.message = '쉴 수 없습니다 (체력이 2 이하일 때만 가능).';
+            this.message = '휴식 횟수를 모두 소진했습니다!';
         }
     }
 
@@ -331,7 +331,7 @@ class Game {
         if (this.state === 'SHOP') modeText = '상점';
         if (this.state === 'GAMEOVER') modeText = '게임 오버';
 
-        this.ctx.fillText(`${modeText} 모드 (v4.1)`, 20, 40);
+        this.ctx.fillText(`${modeText} 모드 (v4.2)`, 20, 40);
 
         // Message Bar
         this.ctx.fillStyle = '#555';
@@ -364,7 +364,9 @@ class Game {
         // Weapon info
         const active = this.player.activeWeapon || { name: '없음' };
         this.ctx.fillStyle = 'cyan';
-        this.ctx.fillText(`무기: ${active.name}`, 20, 180);
+        // Show Name + Level if level > 0
+        const levelStr = active.level ? ` +${active.level}` : '';
+        this.ctx.fillText(`무기: ${active.name}${levelStr}`, 20, 180);
         this.ctx.font = '16px Inter';
         this.ctx.fillText(`공격력:${active.damage} | 명중:${(active.hitRate * 100)}% | 쿨타임:${active.reloadTime}초`, 20, 205);
 
@@ -378,10 +380,12 @@ class Game {
             this.ctx.fillRect(400, 200, 100, 100);
             this.ctx.fillStyle = 'white';
             this.ctx.fillText("집 (HOME)", 415, 260);
-            if (this.player.hp <= 2) {
-                this.ctx.fillStyle = '#afa';
-                this.ctx.fillText("잠기 (R)", 420, 280);
-            }
+
+            this.ctx.fillStyle = '#afa';
+            this.ctx.fillText(`휴식하기 (R)`, 420, 280);
+            this.ctx.font = '16px Inter';
+            this.ctx.fillText(`남은 횟수: ${this.player.restCount}`, 430, 305);
+            this.ctx.font = '20px Inter';
         } else if (this.state === 'SHOP') {
             this.ctx.fillStyle = '#aa4';
             this.ctx.fillRect(400, 200, 100, 100);

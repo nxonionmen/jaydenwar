@@ -1,33 +1,36 @@
-# 구현 계획 - 아이템 업그레이드 (강화) 시스템
+# 구현 계획 - 휴식 횟수 제한 시스템
 
-무기를 강화하여 공격력을 높이는 시스템을 추가합니다.
+기존의 "체력 2 이하일 때만 휴식 가능" 조건을 제거하고, **휴식 횟수 제한(Rest Count)** 시스템을 도입합니다.
 
 ## 핵심 변경 사항
 
-### 1. 데이터 구조 및 저장 방식 변경 ([src/game/Player.js](file:///c:/Users/onionmen/OneDrive/Documents/Projects/jayden_war/src/game/Player.js))
-- **현재**: `inventory.weapons`는 `ITEMS`의 객체를 참조하며, 저장 시 **이름 문자열 배열**(`['Sword', 'Gun']`)로 저장됨.
-- **변경**:
-    - `inventory.weapons`의 아이템들에 `level` (기본 0), `bonusDamage` 속성을 동적으로 추가.
-    - **저장(saveData)**: 이름과 레벨을 함께 저장. 예: `[{ name: 'Sword', level: 1 }, { name: 'Gun', level: 0 }]`
-    - **불러오기(loadData)**: 저장된 데이터를 읽어 `ITEMS`에서 기본 정보를 가져온 뒤, 저장된 `level`과 `bonusDamage`를 덮어씌움.
-    - **하위 호환성**: 기존의 문자열 배열 저장 데이터도 읽을 수 있도록 처리 필요.
+### 1. 플레이어 데이터 ([src/game/Player.js](file:///c:/Users/onionmen/OneDrive/Documents/Projects/jayden_war/src/game/Player.js))
+- **속성 추가**: `restCount` (기본값 5)
+- **메서드 변경**: `heal()`
+    - **변경 전**: `if (hp <= 2) { hp = maxHp; return true; }`
+    - **변경 후**: `if (restCount > 0) { hp = maxHp; restCount--; return true; }`
+- **저장/로드**: `saveData`/`loadData`에 `restCount` 포함. (기존 `reviveCount`와 혼동 주의. 이건 **휴식** 횟수)
+    - *참고*: `reviveCount`는 '부활 횟수(사망 시)', `restCount`는 '휴식 횟수(집)'로 명확히 구분.
 
-### 2. 강화 로직 구현 ([src/game/Player.js](file:///c:/Users/onionmen/OneDrive/Documents/Projects/jayden_war/src/game/Player.js))
-- **`upgradeWeapon(weaponIndex)` 메서드 추가**:
-    - **비용**: `(현재 레벨 + 1) * 50` 골드.
-    - **효과**: 레벨 +1, 데미지 +1 (또는 무기별 상이?). 일단 일괄 공격력 +1로 단순화.
-    - **성공 조건**: 골드 충분 시 100% 성공.
-
-### 3. 상점 UI 업데이트 ([src/game/Game.js](file:///c:/Users/onionmen/OneDrive/Documents/Projects/jayden_war/src/game/Game.js))
-- **상점 모드(SHOP)**에서 기능 추가:
-    - **'U' 키**: 현재 장착 중인 무기 강화.
-    - 화면 표시: "U: 현재 무기 강화 (+방망이 -> 공격력 2, 비용 50g)" 형태로 미리보기 표시.
-
-### 4. HUD 및 아이템 표시 ([src/game/Game.js](file:///c:/Users/onionmen/OneDrive/Documents/Projects/jayden_war/src/game/Game.js))
-- 무기 이름 표시 시 레벨 포함: `Sword` -> `Sword +1`
-- 데미지 표시에 강화 수치 반영.
+### 2. 게임 로직 및 UI ([src/game/Game.js](file:///c:/Users/onionmen/OneDrive/Documents/Projects/jayden_war/src/game/Game.js))
+- **`rest()` 메서드**: 메시지 업데이트 ("남은 휴식 횟수: X")
+- **`draw()` 메서드 (HOME)**:
+    - 집 화면 텍스트 변경: "잠기 (R)" -> "휴식하기 (R) - 남은 횟수: N"
+    - HP 조건(<=2) 체크 로직 제거.
 
 ## 실행 계획
-1.  **Player.js**: `saveData`, `loadData` 리팩토링 및 `upgradeWeapon` 메서드 추가.
-2.  **Game.js**: 상점(`SHOP`) 상태에서 'U' 키 입력 처리 및 드로잉 로직 추가.
-3.  **테스트**: 무기 구매 -> 골드 획득 -> 강화 시도 -> 새로고침 후 강화 상태 유지 확인.
+1.  **Player.js**: `restCount` 속성 추가 및 `heal`, `saveData`, `loadData` 수정.
+2.  **Game.js**: `rest` 메서드 메시지 수정 및 `draw` 메서드 UI 업데이트.
+
+### 3. 데이터 초기화 버튼 추가
+- **UI**: 화면 우측 상단이나 하단에 "초기화" 버튼(HTML) 배치.
+    - 게임 캔버스 밖에 배치하여 실수 방지.
+- **기능**: 버튼 클릭 시 `confirm` 창으로 재확인 후 `localStorage` 클리어 및 `location.reload()`.
+- **구현**: `index.html`에 버튼 추가, `style.css`로 스타일링, `main.js` 또는 `Game.js`에서 이벤트 바인딩.
+
+## 실행 계획
+1.  **Player.js**: `restCount` 로직 구현.
+2.  **Game.js**: 휴식 UI 변경.
+3.  **index.html/style.css**: 초기화 버튼 추가.
+4.  **Game.js**: 초기화 로직 연결.
+3.  **검증**: 체력이 가득 차 있어도 휴식 가능 확인, 횟수 차감 확인, 0회 시 휴식 불가 확인.

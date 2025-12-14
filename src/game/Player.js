@@ -7,6 +7,7 @@ class Player {
         this.xp = 0;
         this.xpToNextLevel = 50;
         this.reviveCount = 0; // Track revives
+        this.restCount = 5; // Track rests (Home)
 
         this.inventory = {
             weapons: [],
@@ -19,8 +20,9 @@ class Player {
     }
 
     heal() {
-        if (this.hp <= 2) {
+        if (this.restCount > 0) {
             this.hp = this.maxHp;
+            this.restCount--;
             return true;
         }
         return false;
@@ -90,7 +92,8 @@ class Player {
                 potions: this.inventory.potions,
                 weapons: weaponData
             },
-            reviveCount: this.reviveCount
+            reviveCount: this.reviveCount,
+            restCount: this.restCount
         };
     }
 
@@ -104,6 +107,8 @@ class Player {
         this.xp = data.xp || 0;
         this.xpToNextLevel = data.xpToNextLevel || 100;
         this.reviveCount = typeof data.reviveCount === 'number' ? data.reviveCount : 0;
+        this.restCount = typeof data.restCount === 'number' ? data.restCount : 5;
+
 
         // Load inventory
         if (data.inventory) {
