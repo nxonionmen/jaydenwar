@@ -72,6 +72,12 @@ class Player {
 
     // Save Data (Serialization)
     saveData() {
+        const weaponData = this.inventory.weapons.map(w => ({
+            name: w.name,
+            level: w.level || 0,
+            bonusDamage: w.bonusDamage || 0
+        }));
+
         return {
             hp: this.hp,
             maxHp: this.maxHp,
@@ -79,12 +85,12 @@ class Player {
             level: this.level,
             xp: this.xp,
             xpToNextLevel: this.xpToNextLevel,
-            reviveCount: this.reviveCount,
+            activeWeaponName: this.activeWeapon ? this.activeWeapon.name : null,
             inventory: {
-                // Save only item names to avoid circular refs and allow re-linking
-                weapons: this.inventory.weapons.map(w => w.name),
-                potions: this.inventory.potions
-            }
+                potions: this.inventory.potions,
+                weapons: weaponData
+            },
+            reviveCount: this.reviveCount
         };
     }
 
@@ -96,22 +102,64 @@ class Player {
         this.gold = data.gold;
         this.level = data.level || 1;
         this.xp = data.xp || 0;
-        this.xpToNextLevel = data.xpToNextLevel || 50;
-        this.reviveCount = data.reviveCount || 0;
+        this.xpToNextLevel = data.xpToNextLevel || 100;
+        this.reviveCount = typeof data.reviveCount === 'number' ? data.reviveCount : 0;
 
-        this.inventory.potions = data.inventory.potions || 0;
-        this.inventory.weapons = [];
+        // Load inventory
+        if (data.inventory) {
+            this.inventory.potions = data.inventory.potions || 0;
+            this.inventory.weapons = [];
 
-        // Re-link weapons from global ITEMS
-        if (data.inventory.weapons) {
-            data.inventory.weapons.forEach(name => {
-                // Find item by name in ITEMS object
-                for (const key in ITEMS) {
-                    if (ITEMS[key].name === name) {
-                        this.inventory.weapons.push(ITEMS[key]);
+            const savedWeapons = data.inventory.weapons || [];
+
+            // Handle legacy save (string array) vs new save (object array)
+            if (savedWeapons.length > 0 && typeof savedWeapons[0] === 'string') {
+                // Migrate old save
+                savedWeapons.forEach(name => {
+                    const baseItem = Object.values(ITEMS).find(i => i.name === name);
+                    if (baseItem) {
+                        // Clone item to allow upgrades
+                        const newItem = Object.assign({}, baseItem);
+                        newItem.level = 0;
+                        newItem.bonusDamage = 0;
+                        this.inventory.weapons.push(newItem);
                     }
-                }
-            });
+                });
+            } else {
+                // New save format
+                savedWeapons.forEach(savedW => {
+                    const baseItem = Object.values(ITEMS).find(i => i.name === savedW.name);
+                    if (baseItem) {
+                        const newItem = Object.assign({}, baseItem);
+                        newItem.level = savedW.level || 0;
+                        newItem.bonusDamage = savedW.bonusDamage || 0;
+                        newItem.damage = baseItem.damage + newItem.bonusDamage; // Apply bonus
+                        this.inventory.weapons.push(newItem);
+                    }
+                });
+            }
+        }
+
+        if (data.activeWeaponName) {
+            const weapon = this.inventory.weapons.find(w => w.name === data.activeWeaponName);
+            if (weapon) this.equipWeapon(weapon);
+        }
+    }
+
+    upgradeWeapon(weapon) {
+        if (!weapon) return { success: false, reason: '무기가 가 없습니다.' };
+
+        const currentLevel = weapon.level || 0;
+        const cost = (currentLevel + 1) * 50; // Cost: 50, 100, 150...
+
+        if (this.gold >= cost) {
+            this.gold -= cost;
+            weapon.level = currentLevel + 1;
+            weapon.bonusDamage = (weapon.bonusDamage || 0) + 1;
+            weapon.damage += 1; // Direct modification since it's a clone
+            return { success: true, level: weapon.level, cost: cost };
+        } else {
+            return { success: false, reason: `골드가 부족합니다 (필요: ${cost}G)` };
         }
     }
 }

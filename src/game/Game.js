@@ -18,10 +18,11 @@ class Game {
         // Give player all weapons for testing as per request implied by "Use these weapons"
         // Or should they buy them? The Readme lists them as general items.
         // Let's give them all 3 basic weapons to demonstrate the mechanics.
-        this.player.inventory.weapons.push(ITEMS.SWORD);
-        this.player.inventory.weapons.push(ITEMS.GUN);
-        this.player.inventory.weapons.push(ITEMS.SHURIKEN);
-        this.player.equipWeapon(ITEMS.SWORD);
+        // We clone them using Object.assign to allow independent upgrades
+        this.player.inventory.weapons.push(Object.assign({ level: 0, bonusDamage: 0 }, ITEMS.SWORD));
+        this.player.inventory.weapons.push(Object.assign({ level: 0, bonusDamage: 0 }, ITEMS.GUN));
+        this.player.inventory.weapons.push(Object.assign({ level: 0, bonusDamage: 0 }, ITEMS.SHURIKEN));
+        this.player.equipWeapon(this.player.inventory.weapons[0]);
 
         window.addEventListener('keydown', (e) => this.input(e));
 
@@ -166,6 +167,21 @@ class Game {
                 }
                 if (result === 'ALREADY_OWNED') this.message = "이미 가지고 있습니다!";
                 if (result === 'NO_GOLD') this.message = "골드가 부족합니다! (50골드 필요)";
+            }
+            if (e.key === 'u' || e.key === 'U') {
+                const weapon = this.player.activeWeapon;
+                if (weapon) {
+                    const result = this.player.upgradeWeapon(weapon);
+                    if (result.success) {
+                        this.message = `강화 성공! ${weapon.name} +${result.level} (공격력 증가)`;
+                        this.sound.playBuy(); // Reuse buy sound
+                        this.save();
+                    } else {
+                        this.message = result.reason;
+                    }
+                } else {
+                    this.message = "강화할 무기를 들고 있지 않습니다.";
+                }
             }
         }
     }
