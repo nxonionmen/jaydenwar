@@ -390,5 +390,4 @@ draw() {
         this.ctx.fillText(`누적 부활: ${this.player.reviveCount}회`, 400, 380);
     }
 }
-}
 window.Game = Game;
