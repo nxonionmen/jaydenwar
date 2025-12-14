@@ -25,8 +25,8 @@ class Player {
             this.restCount--;
             return 'REST_COUNT';
         }
-        if (this.gold >= 30) {
-            this.gold -= 30;
+        if (this.gold >= 15) {
+            this.gold -= 15;
             this.hp = this.maxHp;
             return 'GOLD';
         }
