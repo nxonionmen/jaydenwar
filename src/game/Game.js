@@ -32,7 +32,26 @@ class Game {
         this.sound = new SoundManager();
         this.soundStarted = false;
 
+        this.loadGame();
         this.setupMobileControls();
+    }
+
+    save() {
+        const data = this.player.saveData();
+        localStorage.setItem('jayden_war_save', JSON.stringify(data));
+    }
+
+    loadGame() {
+        const saved = localStorage.getItem('jayden_war_save');
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                this.player.loadData(data);
+                this.message = "저장된 게임을 불러왔습니다.";
+            } catch (e) {
+                console.error("Save load failed", e);
+            }
+        }
     }
 
     setupMobileControls() {
@@ -57,7 +76,7 @@ class Game {
         // Resume Audio Context on first interaction
         if (!this.soundStarted) {
             this.sound.resume();
-            this.sound.playBGM();
+            // this.sound.playBGM(); // BGM Disabled by user request
             this.soundStarted = true;
         }
 
@@ -99,6 +118,12 @@ class Game {
             }
         }
 
+        if (this.state === 'GAMEOVER') {
+            if (e.key === 'r' || e.key === 'R') {
+                this.revive();
+            }
+        }
+
         // Battle Selection
         if (this.state === 'BATTLE_SELECT') {
             if (e.key === '1') this.startBattle('ORC');
@@ -111,6 +136,7 @@ class Game {
                 if (this.shop.buyPotion(this.player)) {
                     this.message = "포션 구매 완료!";
                     this.sound.playBuy();
+                    this.save();
                 } else {
                     this.message = "골드가 부족합니다!";
                 }
@@ -120,6 +146,7 @@ class Game {
                 if (result === 'BOUGHT') {
                     this.message = "대검 구매 완료!";
                     this.sound.playBuy();
+                    this.save();
                 }
                 if (result === 'ALREADY_OWNED') this.message = "이미 가지고 있습니다!";
                 if (result === 'NO_GOLD') this.message = "골드가 부족합니다! (50골드 필요)";
@@ -142,13 +169,23 @@ class Game {
     }
 
     enterBattle() {
+        this.state = 'BATTLE_SELECT';
+        this.message = '(1)오크 (2)기사 (3)드래곤 - 싸울 상대를 고르세요!';
+        this.enemy = null;
+    }
+
+    startBattle(type) {
         this.state = 'BATTLE';
-        this.message = '적이 나타났습니다! 스페이스바로 공격하세요.';
-        this.enemy = {
-            hp: 10,
-            maxHp: 10,
-            name: '오크'
-        };
+        if (type === 'ORC') {
+            this.enemy = { hp: 10, maxHp: 10, name: '오크', xp: 10 };
+            this.message = '오크가 나타났습니다!';
+        } else if (type === 'KNIGHT') {
+            this.enemy = { hp: 30, maxHp: 30, name: '기사', xp: 30 };
+            this.message = '기사가 나타났습니다!';
+        } else if (type === 'DRAGON') {
+            this.enemy = { hp: 100, maxHp: 100, name: '드래곤', xp: 100 };
+            this.message = '드래곤이 나타났습니다!';
+        }
     }
 
     attack() {
@@ -201,26 +238,43 @@ class Game {
         const enemyDmg = 1;
         const taken = this.player.takeDamage(enemyDmg);
         this.sound.playHit();
-        // this.message += ` Enemy hit you for ${taken}!`;
-        // Append message carefully?
 
         if (this.player.hp <= 0) {
             this.state = 'GAMEOVER';
-            this.message = '사망했습니다. 새로고침하여 다시 시작하세요.';
+            const cost = this.player.reviveCount < 3 ? '무료' : '50골드';
+            this.message = `사망했습니다. (R)부활 - 비용: ${cost} (누적: ${this.player.reviveCount}회)`;
         }
     }
 
     winBattle() {
         this.state = 'HOME';
+        // Reward based on enemy type? strictly 20 gold for now as per minimal logic, but XP varies
         this.player.gold += 20;
-        // Bonus for streak? logic not here yet
-        this.message = '승리! 20 골드 획득.';
+        this.player.gainXp(this.enemy.xp || 10);
+        this.message = `승리! 20 골드, ${this.enemy.xp} XP 획득.`;
         this.enemy = null;
+        this.save();
+    }
+
+    revive() {
+        const cost = this.player.reviveCount < 3 ? 0 : 50;
+
+        if (this.player.gold >= cost) {
+            this.player.gold -= cost;
+            this.player.reviveCount++;
+            this.player.hp = Math.floor(this.player.maxHp / 2); // 50% HP Revive
+            this.state = 'HOME';
+            this.message = `부활했습니다! (HP 50% 회복)`;
+            this.save();
+        } else {
+            this.message = `골드가 부족하여 부활할 수 없습니다. (필요: ${cost})`;
+        }
     }
 
     rest() {
         if (this.player.heal()) {
             this.message = '휴식하여 체력을 회복했습니다!';
+            this.save();
         } else {
             this.message = '쉴 수 없습니다 (체력이 2 이하일 때만 가능).';
         }
@@ -299,6 +353,16 @@ class Game {
             this.ctx.font = '12px Inter';
             this.ctx.fillText("공3 명90%", 420, 315);
             this.ctx.font = '20px Inter';
+        } else if (this.state === 'BATTLE_SELECT') {
+            this.ctx.fillStyle = '#44a';
+            this.ctx.fillRect(300, 150, 300, 200);
+            this.ctx.fillStyle = 'white';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText("전투 상대 선택", 450, 190);
+            this.ctx.textAlign = 'left';
+            this.ctx.fillText("(1) 오크 - 10G/10XP", 320, 230);
+            this.ctx.fillText("(2) 기사 - 20G/30XP (체력 높음)", 320, 260);
+            this.ctx.fillText("(3) 드래곤 - 20G/100XP (보스)", 320, 290);
         } else if (this.state === 'BATTLE') {
             if (this.enemy) {
                 this.ctx.fillStyle = 'red';
@@ -308,6 +372,18 @@ class Game {
                 this.ctx.fillText(this.enemy.name, 540, 250);
                 this.ctx.fillText(`${this.enemy.hp} HP`, 540, 270);
             }
+        } else if (this.state === 'GAMEOVER') {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.fillStyle = 'red';
+            this.ctx.font = '40px Inter';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText("YOU DIED", 400, 300);
+            this.ctx.fillStyle = 'white';
+            this.ctx.font = '20px Inter';
+            const cost = this.player.reviveCount < 3 ? '무료' : '50골드';
+            this.ctx.fillText(`(R) 부활하기 - 비용: ${cost}`, 400, 350);
+            this.ctx.fillText(`누적 부활: ${this.player.reviveCount}회`, 400, 380);
         }
     }
 }

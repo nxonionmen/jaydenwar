@@ -56,5 +56,48 @@ class Player {
     equipWeapon(weapon) {
         this.activeWeapon = weapon;
     }
+
+    // Save Data (Serialization)
+    saveData() {
+        return {
+            hp: this.hp,
+            maxHp: this.maxHp,
+            gold: this.gold,
+            level: this.level,
+            xp: this.xp,
+            xpToNextLevel: this.xpToNextLevel,
+            inventory: {
+                // Save only item names to avoid circular refs and allow re-linking
+                weapons: this.inventory.weapons.map(w => w.name),
+                potions: this.inventory.potions
+            }
+        };
+    }
+
+    // Load Data (Deserialization)
+    loadData(data) {
+        if (!data) return;
+        this.hp = data.hp;
+        this.maxHp = data.maxHp;
+        this.gold = data.gold;
+        this.level = data.level || 1;
+        this.xp = data.xp || 0;
+        this.xpToNextLevel = data.xpToNextLevel || 50;
+
+        this.inventory.potions = data.inventory.potions || 0;
+        this.inventory.weapons = [];
+
+        // Re-link weapons from global ITEMS
+        if (data.inventory.weapons) {
+            data.inventory.weapons.forEach(name => {
+                // Find item by name in ITEMS object
+                for (const key in ITEMS) {
+                    if (ITEMS[key].name === name) {
+                        this.inventory.weapons.push(ITEMS[key]);
+                    }
+                }
+            });
+        }
+    }
 }
 window.Player = Player;

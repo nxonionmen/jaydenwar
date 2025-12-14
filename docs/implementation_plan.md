@@ -1,31 +1,28 @@
-# 구현 계획 - 모바일/태블릿 지원 (iPad)
+# 구현 계획 - 부활 시스템 (Revive System)
 
-아이패드와 같은 터치 디바이스에서 게임을 플레이할 수 있도록 호스팅 및 입력 방식을 개선합니다.
+플레이어 사망 시 "새로고침" 대신 게임 내 기능을 통해 부활할 수 있도록 하며, 횟수에 따라 비용을 부과합니다.
 
-## 제안된 변경 사항
+## 변경 사항
 
-### 1. 배포 (Hosting)
-- **GitHub Pages**: 아이패드 브라우저(Safari/Chrome)에서 접속할 수 있도록 GitHub Pages 기능을 활성화해야 합니다. (사용자 설정 필요)
+### [수정] [src/game/Player.js](file:///c:/Users/onionmen/OneDrive/Documents/Projects/jayden_war/src/game/Player.js)
+- `reviveCount` 속성 추가 및 저장/로드 로직에 포함.
 
-### 2. 터치 인터페이스 (Touch UI)
-키보드가 없으므로 화면에 조작 버튼을 추가합니다.
+### [수정] [src/game/Game.js](file:///c:/Users/onionmen/OneDrive/Documents/Projects/jayden_war/src/game/Game.js)
+- **Game Over 상태 처리**:
+    - 기존: "새로고침하여 다시 시작하세요" 표기.
+    - 변경: "부활하려면 'R'을 누르세요. (남은 무료 부활: N회 / 비용: 50G)"
+- **`input()`**: `GAMEOVER` 상태에서 'R' 키 입력 처리 -> `revive()` 호출.
+- **`revive()` 메서드 구현**:
+    - `reviveCount < 3`: 무료 부활. `reviveCount` 증가.
+    - `reviveCount >= 3`: 50골드 소모. 골드 부족 시 부활 불가 메시지 출력.
+    - 성공 시: HP 회복(최대치의 50%?), 상태를 `HOME`으로 변경, 게임 저장.
 
-#### [수정] [`index.html`]
-- **UI 레이어 추가**: 캔버스 위에 버튼들을 배치할 `div#mobile-controls` 추가.
-- **스타일링**: 반투명한 버튼, 화면 하단/측면 배치.
-
-#### [수정] [src/game/Game.js](file:///c:/Users/onionmen/OneDrive/Documents/Projects/jayden_war/src/game/Game.js)
-- **터치 이벤트 핸들링**:
-    - 버튼 클릭 시 해당 키보드 이벤트(`keydown`)를 시뮬레이션하거나 `input()` 메서드를 직접 호출.
-    - **버튼 구성**:
-        - **이동/메뉴**: [집(H)], [전투(B)], [상점(S)]
-        - **액션**: [공격(Space)], [휴식(R)]
-        - **무기**: [1], [2], [3], [4] (또는 순환 버튼)
-
-### 3. 반응형 (Responsive)
-- `viewport` 메타 태그 최적화 (가로 모드 고정 권장).
-- 터치 시 확대/축소 방지.
+## 비용 정책
+- 1~3회: 무료
+- 4회 이상: 50 골드
 
 ## 검증 계획
-- 모바일 뷰로 브라우저 크기 조절 후 버튼 클릭 테스트.
-- 터치 버튼으로 이동, 전투, 아이템 구매가 가능한지 확인.
+- 일부러 사망(HP 0).
+- R키로 3번 무료 부활 확인.
+- 4번째 부활 시 골드 차감 확인.
+- 골드 부족 시 부활 불가 확인.
