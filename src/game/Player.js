@@ -26,6 +26,17 @@ class Player {
         return false;
     }
 
+    usePotion() {
+        if (this.inventory.potions > 0) {
+            if (this.hp < this.maxHp) {
+                this.inventory.potions--;
+                this.hp = Math.min(this.maxHp, this.hp + 5); // Heal 5 or up to max
+                return true;
+            }
+        }
+        return false;
+    }
+
     takeDamage(amount) {
         let reduction = 0;
         if (this.inventory.armor) reduction += this.inventory.armor.damageReduction;
