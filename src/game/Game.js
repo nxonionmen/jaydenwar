@@ -52,6 +52,10 @@ class Game {
                 console.error("Save load failed", e);
             }
         }
+        // Defensive check: Ensure reviveCount is a number
+        if (typeof this.player.reviveCount !== 'number') {
+            this.player.reviveCount = 0;
+        }
     }
 
     setupMobileControls() {
@@ -299,7 +303,7 @@ class Game {
         if (this.state === 'SHOP') modeText = '상점';
         if (this.state === 'GAMEOVER') modeText = '게임 오버';
 
-        this.ctx.fillText(`${modeText} 모드`, 20, 40);
+        this.ctx.fillText(`${modeText} 모드 (v4.1)`, 20, 40);
 
         // Message Bar
         this.ctx.fillStyle = '#555';
